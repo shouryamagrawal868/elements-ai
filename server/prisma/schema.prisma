@@ -7,75 +7,145 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum UploadStatus {
+  UPLOADED
+  EXTRACTING_AUDIO
+  RECOGNIZING
+  COMPLETED
+  FAILED
+}
+
+enum RecognitionEngine {
+  ACOUSTID
+  AUDD
+  MUSICBRAINZ
+  CUSTOM_AI
+}
+
 model User {
   id        String   @id @default(uuid())
   email     String   @unique
   name      String?
   photoUrl  String?  @db.Text
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  uploads   Upload[]
+
+  uploads Upload[]
 
   @@map("users")
 }
 
 model Upload {
-  id        String       @id @default(uuid())
-  userId    String
-  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  fileName  String
-  fileSize  Int
-  fileType  String
-  s3Key     String       @db.Text
-  s3Url     String?      @db.Text
-  status    UploadStatus @default(PROCESSING)
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
-  result    RecognitionResult?
+  id String @id @default(uuid())
+
+  userId String
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  fileName String
+  fileSize Int
+  fileType String
+
+  storagePath String @db.Text
+  publicUrl   String? @db.Text
+
+  status UploadStatus @default(UPLOADED)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  recognitionResult RecognitionResult?
 
   @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+
   @@map("uploads")
 }
 
-enum UploadStatus {
-  PROCESSING
-  COMPLETED
-  FAILED
-  NOT_FOUND
-}
-
 model RecognitionResult {
-  id          String   @id @default(uuid())
-  uploadId    String   @unique
-  upload      Upload   @relation(fields: [uploadId], references: [id], onDelete: Cascade)
-  trackTitle  String?
-  artist      String?
-  album       String?
-  genre       String?
-  bpm         Int?
-  mood        String?
+  id String @id @default(uuid())
+
+  uploadId String @unique
+  upload   Upload @relation(fields: [uploadId], references: [id], onDelete: Cascade)
+
+  trackTitle String?
+  artist String?
+  album String?
+  genre String?
+
+  bpm Int?
+  mood String?
   releaseYear Int?
-  duration    Int?
-  spotifyUrl  String?  @db.Text
-  youtubeUrl  String?  @db.Text
-  coverUrl    String?  @db.Text
-  confidence  Float?
+  duration Int?
+
+  spotifyUrl String? @db.Text
+  youtubeUrl String? @db.Text
+  coverUrl   String? @db.Text
+
+  confidence Float?
+
+  processingTime Int?
+
+  engine RecognitionEngine?
+  engineVersion String?
+
   rawResponse Json?
-  createdAt   DateTime @default(now())
-  feedback    Feedback?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  feedback Feedback?
+  mlTrainingData MLTrainingData?
+
+  @@index([trackTitle])
+  @@index([artist])
+  @@index([confidence])
 
   @@map("recognition_results")
 }
 
 model Feedback {
-  id                  String            @id @default(uuid())
-  recognitionResultId String            @unique
-  recognitionResult   RecognitionResult @relation(fields: [recognitionResultId], references: [id], onDelete: Cascade)
-  isCorrect           Boolean
-  correctTrackTitle   String?
-  correctArtist       String?
-  comment             String?           @db.Text
-  createdAt           DateTime          @default(now())
+  id String @id @default(uuid())
+
+  recognitionResultId String @unique
+
+  recognitionResult RecognitionResult @relation(fields: [recognitionResultId], references: [id], onDelete: Cascade)
+
+  isCorrect Boolean
+
+  correctTrackTitle String?
+  correctArtist String?
+
+  comment String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("feedback")
+}
+
+model MLTrainingData {
+  id String @id @default(uuid())
+
+  recognitionResultId String @unique
+
+  recognitionResult RecognitionResult @relation(fields: [recognitionResultId], references: [id], onDelete: Cascade)
+
+  predictedTrack String?
+  predictedArtist String?
+
+  confidence Float?
+
+  correctTrack String?
+  correctArtist String?
+
+  verified Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([verified])
+
+  @@map("ml_training_data")
 }
