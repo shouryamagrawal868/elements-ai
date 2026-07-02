@@ -1,4 +1,5 @@
 import { Router } from "express";
+import healthRoutes from "../modules/health/health.routes";
 
 const router = Router();
 
@@ -11,13 +12,8 @@ router.get("/", (req, res) => {
   });
 });
 
-// Health Route
-router.get("/health", (req, res) => {
-  res.json({
-    status: "OK",
-    database: "Connected",
-  });
-});
+// Health Module
+router.use("/health", healthRoutes);
 
 // API Version Route
 router.get("/api/v1", (req, res) => {
