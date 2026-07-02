@@ -1,0 +1,46 @@
+{
+  "name": "elements-ai-server",
+  "version": "1.0.0",
+  "description": "Backend API for Elements AI",
+  "private": true,
+  "license": "MIT",
+  "type": "commonjs",
+  "main": "dist/server.js",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:studio": "prisma studio"
+  },
+  "keywords": [
+    "elements-ai",
+    "music-recognition",
+    "ai",
+    "video-analysis"
+  ],
+  "author": "Shourya Agrawal",
+  "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "compression": "^1.8.1",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "helmet": "^8.2.0",
+    "multer": "^2.2.0",
+    "pino": "^10.3.1",
+    "pino-http": "^11.0.0",
+    "prisma": "^5.22.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/compression": "^1.8.1",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/multer": "^2.2.0",
+    "@types/node": "^26.1.0",
+    "tsx": "^4.22.4",
+    "typescript": "^6.0.3"
+  }
+}
