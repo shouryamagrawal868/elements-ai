@@ -2,10 +2,12 @@ import { Router } from "express";
 
 import healthRoutes from "../modules/health/health.routes";
 import uploadRoutes from "../modules/upload/upload.routes";
+import { audioRoutes } from "../modules/audio";
 
 const router = Router();
 
 router.use("/health", healthRoutes);
 router.use("/api/v1/upload", uploadRoutes);
+router.use("/api/v1/audio", audioRoutes);
 
 export default router;
