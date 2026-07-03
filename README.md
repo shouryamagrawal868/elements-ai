@@ -11,17 +11,6 @@ elements.ai is an AI-powered video analysis tool that identifies every creative 
 
 Upload a video and get back: track name, artist, album, genre, BPM, mood, release year, Spotify link, YouTube link.
 
-## Tech Stack
-
-| Layer | Technology |
-|---|---|
-| Frontend | React.js + Tailwind CSS (PWA) |
-| Backend | Node.js + Express |
-| AI / Audio | ACRCloud API |
-| Database | PostgreSQL + Redis |
-| File Storage | AWS S3 |
-| Auth | Firebase |
-| Hosting | Vercel + Railway |
 
 ## Project Structure
 
