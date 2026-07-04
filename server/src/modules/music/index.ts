@@ -1,0 +1,1 @@
+export { default as musicRoutes } from "./music.routes";
