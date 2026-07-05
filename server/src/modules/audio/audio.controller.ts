@@ -1,34 +1,30 @@
 import { Request, Response } from "express";
-import { audioService } from "./audio.service";
+import { ffmpegService } from "./ffmpeg.service";
 
 class AudioController {
   async extract(req: Request, res: Response) {
     try {
-      console.log("========== REQUEST FILE ==========");
-      console.log(req.file);
-
-      if (!req.file) {
+      if (!req.body.videoPath) {
         return res.status(400).json({
           success: false,
-          message: "No video uploaded",
+          message: "videoPath is required",
         });
       }
 
-      const audioPath = await audioService.extractAudio(req.file.path);
+      const audioPath = await ffmpegService.extractAudio(
+        req.body.videoPath
+      );
 
-      return res.status(200).json({
+      return res.json({
         success: true,
-        message: "Audio extracted successfully",
         audioPath,
       });
-    } catch (error: any) {
-      console.error("========== AUDIO ERROR ==========");
-      console.error(error);
+    } catch (err: any) {
+      console.error(err);
 
       return res.status(500).json({
         success: false,
-        message: "Audio extraction failed",
-        error: error.message,
+        message: err.message,
       });
     }
   }

@@ -4,13 +4,8 @@ import { uploadController } from "./upload.controller";
 
 const router = Router();
 
-router.post("/", (req, res, next) => {
-  console.log("Request reached upload route");
-  next();
+router.post("/", upload.single("file"), (req, res) => {
+  uploadController.upload(req, res);
 });
-
-router.post("/", upload.single("file"), (req, res) =>
-  uploadController.upload(req, res)
-);
 
 export default router;

@@ -8,30 +8,47 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  name      String?
-  photoUrl  String?  @db.Text
+  id       String  @id @default(uuid())
+  email    String  @unique
+  name     String?
+  photoUrl String? @db.Text
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  uploads   Upload[]
+
+  uploads Upload[]
 
   @@map("users")
 }
 
 model Upload {
-  id                String             @id @default(uuid())
-  userId            String
-  fileName          String
-  fileSize          Int
-  fileType          String
-  status            UploadStatus       @default(UPLOADED)
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
-  publicUrl         String?            @db.Text
-  storagePath       String             @db.Text
+  id String @id @default(uuid())
+
+  userId String
+
+  // Original uploaded video
+  fileName String
+  fileSize Int
+  fileType String
+
+  // Storage
+  storagePath   String  @db.Text
+  audioPath     String? @db.Text
+  thumbnailPath String? @db.Text
+  publicUrl     String? @db.Text
+
+  // Processing
+  status UploadStatus @default(UPLOADED)
+
+  processingStartedAt DateTime?
+  processingEndedAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   recognitionResult RecognitionResult?
-  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([status])
@@ -40,29 +57,41 @@ model Upload {
 }
 
 model RecognitionResult {
-  id             String             @id @default(uuid())
-  uploadId       String             @unique
-  trackTitle     String?
-  artist         String?
-  album          String?
-  genre          String?
-  bpm            Int?
-  mood           String?
-  releaseYear    Int?
-  duration       Int?
-  spotifyUrl     String?            @db.Text
-  youtubeUrl     String?            @db.Text
-  coverUrl       String?            @db.Text
-  confidence     Float?
-  rawResponse    Json?
-  createdAt      DateTime           @default(now())
-  engine         RecognitionEngine?
-  engineVersion  String?
+  id String @id @default(uuid())
+
+  uploadId String @unique
+
+  trackTitle String?
+  artist     String?
+  album      String?
+  genre      String?
+
+  duration    Int?
+  bpm         Int?
+  mood        String?
+  releaseYear Int?
+
+  spotifyUrl String? @db.Text
+  youtubeUrl String? @db.Text
+  coverUrl   String? @db.Text
+
+  confidence Float?
+
+  engine        RecognitionEngine?
+  engineVersion String?
+
   processingTime Int?
-  updatedAt      DateTime           @updatedAt
-  feedback       Feedback?
+
+  rawResponse Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  upload Upload @relation(fields: [uploadId], references: [id], onDelete: Cascade)
+
+  feedback Feedback?
+
   mlTrainingData MLTrainingData?
-  upload         Upload             @relation(fields: [uploadId], references: [id], onDelete: Cascade)
 
   @@index([trackTitle])
   @@index([artist])
@@ -71,31 +100,44 @@ model RecognitionResult {
 }
 
 model Feedback {
-  id                  String            @id @default(uuid())
-  recognitionResultId String            @unique
-  isCorrect           Boolean
-  correctTrackTitle   String?
-  correctArtist       String?
-  comment             String?           @db.Text
-  createdAt           DateTime          @default(now())
-  updatedAt           DateTime          @updatedAt
-  recognitionResult   RecognitionResult @relation(fields: [recognitionResultId], references: [id], onDelete: Cascade)
+  id String @id @default(uuid())
+
+  recognitionResultId String @unique
+
+  isCorrect Boolean
+
+  correctTrackTitle String?
+  correctArtist     String?
+
+  comment String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  recognitionResult RecognitionResult @relation(fields: [recognitionResultId], references: [id], onDelete: Cascade)
 
   @@map("feedback")
 }
 
 model MLTrainingData {
-  id                  String            @id @default(uuid())
-  recognitionResultId String            @unique
-  predictedTrack      String?
-  predictedArtist     String?
-  confidence          Float?
-  correctTrack        String?
-  correctArtist       String?
-  verified            Boolean           @default(false)
-  createdAt           DateTime          @default(now())
-  updatedAt           DateTime          @updatedAt
-  recognitionResult   RecognitionResult @relation(fields: [recognitionResultId], references: [id], onDelete: Cascade)
+  id String @id @default(uuid())
+
+  recognitionResultId String @unique
+
+  predictedTrack  String?
+  predictedArtist String?
+
+  confidence Float?
+
+  correctTrack  String?
+  correctArtist String?
+
+  verified Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  recognitionResult RecognitionResult @relation(fields: [recognitionResultId], references: [id], onDelete: Cascade)
 
   @@index([verified])
   @@map("ml_training_data")
@@ -114,18 +156,4 @@ enum RecognitionEngine {
   AUDD
   MUSICBRAINZ
   CUSTOM_AI
-}
-
-model Video {
-  id          String   @id @default(cuid())
-  fileName    String
-  filePath    String
-  uploadedAt  DateTime @default(now())
-
-  songName    String?
-  artistName  String?
-  confidence  Float?
-
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
 }
