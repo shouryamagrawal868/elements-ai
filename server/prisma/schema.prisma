@@ -24,9 +24,10 @@ model User {
 model Upload {
   id String @id @default(uuid())
 
+  // Owner
   userId String
 
-  // Original uploaded video
+  // Original Uploaded Video
   fileName String
   fileSize Int
   fileType String
@@ -37,15 +38,17 @@ model Upload {
   thumbnailPath String? @db.Text
   publicUrl     String? @db.Text
 
-  // Processing
+  // Processing Status
   status UploadStatus @default(UPLOADED)
 
   processingStartedAt DateTime?
   processingEndedAt   DateTime?
+  thumbnailGeneratedAt DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   recognitionResult RecognitionResult?
@@ -61,6 +64,7 @@ model RecognitionResult {
 
   uploadId String @unique
 
+  // Song Information
   trackTitle String?
   artist     String?
   album      String?
@@ -71,10 +75,12 @@ model RecognitionResult {
   mood        String?
   releaseYear Int?
 
+  // External Links
   spotifyUrl String? @db.Text
   youtubeUrl String? @db.Text
   coverUrl   String? @db.Text
 
+  // Recognition Details
   confidence Float?
 
   engine        RecognitionEngine?
@@ -87,10 +93,10 @@ model RecognitionResult {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Relations
   upload Upload @relation(fields: [uploadId], references: [id], onDelete: Cascade)
 
-  feedback Feedback?
-
+  feedback       Feedback?
   mlTrainingData MLTrainingData?
 
   @@index([trackTitle])
@@ -146,6 +152,7 @@ model MLTrainingData {
 enum UploadStatus {
   UPLOADED
   EXTRACTING_AUDIO
+  GENERATING_THUMBNAIL
   RECOGNIZING
   COMPLETED
   FAILED
