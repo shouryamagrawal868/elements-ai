@@ -34,7 +34,7 @@ export class UploadService {
       },
     });
 
-    // ✅ Queue background job
+    // Queue background job
     await uploadQueue.add("process-upload", {
       uploadId: upload.id,
       videoPath: file.path,
@@ -43,6 +43,24 @@ export class UploadService {
     return {
       success: true,
       message: "Video uploaded successfully. Processing started.",
+      upload,
+    };
+  }
+
+  // Get upload by ID
+  async getUploadById(uploadId: string) {
+    const upload = await prisma.upload.findUnique({
+      where: {
+        id: uploadId,
+      },
+    });
+
+    if (!upload) {
+      throw new Error("Upload not found");
+    }
+
+    return {
+      success: true,
       upload,
     };
   }

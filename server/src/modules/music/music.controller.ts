@@ -4,20 +4,24 @@ import { musicService } from "./music.service";
 class MusicController {
   async recognize(req: Request, res: Response) {
     try {
-      if (!req.body.audioPath) {
+      const { audioPath, uploadId } = req.body;
+
+      if (!audioPath || !uploadId) {
         return res.status(400).json({
           success: false,
-          message: "audioPath is required",
+          message: "audioPath and uploadId are required",
         });
       }
 
-      const result = await musicService.recognizeSong(req.body.audioPath);
+      const result = await musicService.recognizeSong(
+        audioPath,
+        uploadId
+      );
 
       return res.status(200).json({
         success: true,
         data: result,
       });
-
     } catch (error: any) {
       console.error(error);
 
