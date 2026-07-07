@@ -1,33 +1,255 @@
-﻿# elements.ai
+# 🎬 Elements AI
 
-> Phase 1 — Background Music Recognition Engine
-> Upload a video clip. AI identifies the background music instantly.
+> AI-powered video analysis platform that extracts media assets, recognizes background music, and analyzes video content through an asynchronous processing pipeline.
 
-## What is elements.ai?
+---
 
-elements.ai is an AI-powered video analysis tool that identifies every creative element used in a video — background music, sound effects, colour grading, filters, memes, and transitions.
+# 🚀 Overview
 
-## Phase 1 — Background Music Recognition
+Elements AI is a backend-first AI platform designed to help video creators automatically analyze uploaded videos.
 
-Upload a video and get back: track name, artist, album, genre, BPM, mood, release year, Spotify link, YouTube link.
+The system currently supports:
 
+- Video Upload
+- Background Processing
+- Audio Extraction
+- Thumbnail Generation
+- Music Recognition (Mock Provider)
+- Asynchronous Job Queue
+- Database Persistence
 
-## Project Structure
+Future versions will detect:
 
-client/          - React frontend
-server/          - Node.js backend
-database/        - Migrations and seeds
-docs/            - Setup and deployment guides
-.github/         - CI/CD workflows
+- 🎵 Music
+- 🔊 Sound Effects
+- 🎨 Color Grading
+- 📝 Fonts
+- 😊 Faces
+- 📦 Objects
+- 🎬 Video Effects
 
-## Roadmap
+---
 
-| Phase | Feature | Status |
-|---|---|---|
-| Phase 1 | Background music recognition | In progress |
-| Phase 2 | Sound effects recognition | Planned |
-| Phase 3 | Colour grading / LUT detection | Planned |
-| Phase 4 | Filters and visual effects | Planned |
-| Phase 5 | Meme and template detection | Planned |
+# 🏗 Architecture
 
-Built in public. Every step documented on GitHub and LinkedIn.
+Client
+
+↓
+
+Express API
+
+↓
+
+Upload Service
+
+↓
+
+BullMQ Queue
+
+↓
+
+Redis
+
+↓
+
+Background Worker
+
+↓
+
+FFmpeg
+
+├── Extract Audio
+
+├── Generate Thumbnail
+
+└── Music Recognition
+
+↓
+
+Prisma ORM
+
+↓
+
+MySQL
+
+---
+
+# 🛠 Tech Stack
+
+## Backend
+
+- TypeScript
+- Node.js
+- Express.js
+
+## Database
+
+- Prisma ORM
+- MySQL
+
+## Queue System
+
+- BullMQ
+- Redis
+
+## Media Processing
+
+- FFmpeg
+
+## Containerization
+
+- Docker
+
+---
+
+# ✅ Features Completed
+
+### Upload Module
+
+- Video Upload API
+- File Validation
+- Local Storage
+
+### Background Processing
+
+- BullMQ Worker
+- Redis Queue
+- Async Processing
+
+### Media Processing
+
+- Audio Extraction
+- Thumbnail Generation
+
+### Music Recognition
+
+- Mock Recognition Provider
+- Database Integration
+
+### Database
+
+- User Model
+- Upload Model
+- RecognitionResult Model
+- Feedback Model
+- ML Training Data Model
+
+---
+
+# 📂 Project Structure
+
+src/
+├── config/
+├── jobs/
+├── middleware/
+├── modules/
+│ ├── upload/
+│ ├── media/
+│ ├── musicRecognition/
+│ ├── thumbnail/
+│ ├── audio/
+│ └── health/
+├── prisma/
+└── server.ts
+
+---
+
+# 🔄 Current Processing Flow
+
+Upload Video
+
+↓
+
+Save Upload
+
+↓
+
+BullMQ Queue
+
+↓
+
+Worker
+
+↓
+
+Extract Audio
+
+↓
+
+Generate Thumbnail
+
+↓
+
+Recognize Music
+
+↓
+
+Save Recognition Result
+
+↓
+
+Completed
+
+---
+
+# 📌 Roadmap
+
+## Phase 1 ✅
+
+- Backend Foundation
+- Redis
+- BullMQ
+- Docker
+- FFmpeg
+- Upload API
+- Async Workers
+
+## Phase 2 🚧
+
+- Real AudD Integration
+- Spotify Metadata
+- Album Art
+- Artist Information
+
+## Phase 3
+
+- Sound Effect Recognition
+- Audio Classification
+
+## Phase 4
+
+- Object Detection
+- Face Detection
+- Scene Recognition
+
+## Phase 5
+
+- Font Detection
+- Color Palette Detection
+- LUT Recognition
+
+## Phase 6
+
+- React Dashboard
+- Authentication
+- Upload History
+
+## Phase 7
+
+- AWS S3
+- CI/CD
+- Production Deployment
+
+---
+
+# 📸 Screenshots
+
+Coming Soon
+
+---
+
+# 👨‍💻 Author
+
+**Your Name**
+
+Built with ❤️ using TypeScript, Prisma, BullMQ, Redis and FFmpeg.
