@@ -1,11 +1,11 @@
 import { prisma } from "../../config/prisma";
-import { ffmpegService } from "../audio/ffmpeg.service";
-import { musicService } from "../music/music.service";
+import { uploadQueue } from "../../jobs";
 
 export class UploadService {
   async upload(file: Express.Multer.File) {
     const DEFAULT_USER_ID = "development-user";
 
+    // Find or create development user
     let user = await prisma.user.findUnique({
       where: {
         id: DEFAULT_USER_ID,
@@ -22,7 +22,7 @@ export class UploadService {
       });
     }
 
-    // Save upload
+    // Create upload record
     const upload = await prisma.upload.create({
       data: {
         userId: user.id,
@@ -34,40 +34,16 @@ export class UploadService {
       },
     });
 
-    // Extract audio
-    const audioPath = await ffmpegService.extractAudio(file.path);
-
-    // Save audio path
-    const updatedUpload = await prisma.upload.update({
-      where: {
-        id: upload.id,
-      },
-      data: {
-        audioPath,
-        status: "RECOGNIZING",
-      },
-    });
-
-    // Recognize music
-    const recognition = await musicService.recognizeSong(
-      audioPath,
-      upload.id
-    );
-
-    // Update status
-    await prisma.upload.update({
-      where: {
-        id: upload.id,
-      },
-      data: {
-        status: "COMPLETED",
-      },
+    // ✅ Queue background job
+    await uploadQueue.add("process-upload", {
+      uploadId: upload.id,
+      videoPath: file.path,
     });
 
     return {
       success: true,
-      upload: updatedUpload,
-      recognition,
+      message: "Video uploaded successfully. Processing started.",
+      upload,
     };
   }
 }
