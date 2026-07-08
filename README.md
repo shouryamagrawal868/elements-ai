@@ -243,6 +243,19 @@ Completed
 ---
 
 # 📸 Screenshots
+## 🚀 Current Progress
+
+- ✅ Video Upload API
+- ✅ File Storage
+- ✅ FFmpeg Audio Extraction
+- ✅ Thumbnail Generation
+- ✅ BullMQ Background Workers
+- ✅ Prisma ORM
+- ✅ Neon PostgreSQL Integration
+- ✅ Cloud Fingerprint Storage
+- 🔄 Music Library (In Progress)
+- 🔄 AI Fingerprint Matching (Planned)
+- 🔄 Recommendation Engine (Planned)
 
 Coming Soon
 
@@ -250,6 +263,6 @@ Coming Soon
 
 # 👨‍💻 Author
 
-**Your Name**
+**Shouryam Agrawal**
 
 Built with ❤️ using TypeScript, Prisma, BullMQ, Redis and FFmpeg.
