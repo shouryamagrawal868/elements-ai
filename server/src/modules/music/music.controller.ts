@@ -2,21 +2,18 @@ import { Request, Response } from "express";
 import { musicService } from "./music.service";
 
 class MusicController {
-  async recognize(req: Request, res: Response) {
+  async generateFingerprint(req: Request, res: Response) {
     try {
-      const { audioPath, uploadId } = req.body;
+      const { audioPath } = req.body;
 
-      if (!audioPath || !uploadId) {
+      if (!audioPath) {
         return res.status(400).json({
           success: false,
-          message: "audioPath and uploadId are required",
+          message: "audioPath is required",
         });
       }
 
-      const result = await musicService.recognizeSong(
-        audioPath,
-        uploadId
-      );
+      const result = await musicService.generateFingerprint(audioPath);
 
       return res.status(200).json({
         success: true,
@@ -27,7 +24,7 @@ class MusicController {
 
       return res.status(500).json({
         success: false,
-        message: error.message,
+        message: error.message || "Internal Server Error",
       });
     }
   }

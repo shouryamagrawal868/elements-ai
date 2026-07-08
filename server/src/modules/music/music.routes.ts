@@ -3,8 +3,8 @@ import { musicController } from "./music.controller";
 
 const router = Router();
 
-router.post("/recognize", (req, res) => {
-  musicController.recognize(req, res);
+router.post("/fingerprint", (req, res) => {
+  musicController.generateFingerprint(req, res);
 });
 
 export default router;

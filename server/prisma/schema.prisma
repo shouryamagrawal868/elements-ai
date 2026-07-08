@@ -3,55 +3,40 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
 model User {
-  id       String  @id @default(uuid())
-  email    String  @unique
-  name     String?
-  photoUrl String? @db.Text
-
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String?
+  photoUrl  String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  uploads Upload[]
+  uploads   Upload[]
 
   @@map("users")
 }
 
 model Upload {
-  id String @id @default(uuid())
-
-  // Owner
-  userId String
-
-  // Original Uploaded Video
-  fileName String
-  fileSize Int
-  fileType String
-
-  // Storage
-  storagePath   String  @db.Text
-  audioPath     String? @db.Text
-  thumbnailPath String? @db.Text
-  publicUrl     String? @db.Text
-
-  // Processing Status
-  status UploadStatus @default(UPLOADED)
-
-  processingStartedAt DateTime?
-  processingEndedAt   DateTime?
+  id                   String       @id @default(uuid())
+  userId               String
+  fileName             String
+  fileSize             Int
+  fileType             String
+  storagePath          String
+  publicUrl            String?
+  audioPath            String?
+  thumbnailPath        String?
+  status               UploadStatus @default(UPLOADED)
+  processingStartedAt  DateTime?
+  processingEndedAt    DateTime?
   thumbnailGeneratedAt DateTime?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  recognitionResult RecognitionResult?
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+  fingerprint          Fingerprint?
+  user                 User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([status])
@@ -59,108 +44,26 @@ model Upload {
   @@map("uploads")
 }
 
-model RecognitionResult {
-  id String @id @default(uuid())
+model Fingerprint {
+  id          String   @id @default(uuid())
+  uploadId    String   @unique
+  duration    Int
+  fingerprint String
+  algorithm   String   @default("Chromaprint")
+  version     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  upload      Upload   @relation(fields: [uploadId], references: [id], onDelete: Cascade)
 
-  uploadId String @unique
-
-  // Song Information
-  trackTitle String?
-  artist     String?
-  album      String?
-  genre      String?
-
-  duration    Int?
-  bpm         Int?
-  mood        String?
-  releaseYear Int?
-
-  // External Links
-  spotifyUrl String? @db.Text
-  youtubeUrl String? @db.Text
-  coverUrl   String? @db.Text
-
-  // Recognition Details
-  confidence Float?
-
-  engine        RecognitionEngine?
-  engineVersion String?
-
-  processingTime Int?
-
-  rawResponse Json?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  upload Upload @relation(fields: [uploadId], references: [id], onDelete: Cascade)
-
-  feedback       Feedback?
-  mlTrainingData MLTrainingData?
-
-  @@index([trackTitle])
-  @@index([artist])
-  @@index([confidence])
-  @@map("recognition_results")
-}
-
-model Feedback {
-  id String @id @default(uuid())
-
-  recognitionResultId String @unique
-
-  isCorrect Boolean
-
-  correctTrackTitle String?
-  correctArtist     String?
-
-  comment String? @db.Text
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  recognitionResult RecognitionResult @relation(fields: [recognitionResultId], references: [id], onDelete: Cascade)
-
-  @@map("feedback")
-}
-
-model MLTrainingData {
-  id String @id @default(uuid())
-
-  recognitionResultId String @unique
-
-  predictedTrack  String?
-  predictedArtist String?
-
-  confidence Float?
-
-  correctTrack  String?
-  correctArtist String?
-
-  verified Boolean @default(false)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  recognitionResult RecognitionResult @relation(fields: [recognitionResultId], references: [id], onDelete: Cascade)
-
-  @@index([verified])
-  @@map("ml_training_data")
+  @@index([algorithm])
+  @@map("fingerprints")
 }
 
 enum UploadStatus {
   UPLOADED
   EXTRACTING_AUDIO
   GENERATING_THUMBNAIL
-  RECOGNIZING
+  GENERATING_FINGERPRINT
   COMPLETED
   FAILED
-}
-
-enum RecognitionEngine {
-  ACOUSTID
-  AUDD
-  MUSICBRAINZ
-  CUSTOM_AI
 }

@@ -1,7 +1,7 @@
 import { Worker } from "bullmq";
 import { redisConnection } from "./connection";
 import { mediaService } from "../modules/media";
-import { musicRecognitionService } from "../modules/musicRecognition";
+import { acoustIdService } from "../modules/acoustid";
 import { prisma } from "../config/prisma";
 
 console.log("🚀 Upload Worker Started");
@@ -25,33 +25,35 @@ new Worker(
         },
       });
 
-      // STEP 2 - Extract audio & thumbnail
+      // STEP 2 - Extract Audio & Thumbnail
       const mediaResult = await mediaService.processVideo(
         job.data.videoPath
       );
 
-      console.log("Media Result:");
+      console.log("=================================");
+      console.log("Media Processing Complete");
       console.log(mediaResult);
 
-      // STEP 3 - Music Recognition
+      // STEP 3 - Generate Fingerprint
       await prisma.upload.update({
         where: {
           id: job.data.uploadId,
         },
         data: {
-          status: "RECOGNIZING",
+          status: "GENERATING_FINGERPRINT",
         },
       });
 
-      const recognitionResult =
-        await musicRecognitionService.recognize(
+      const fingerprintResult =
+        await acoustIdService.generateFingerprint(
           mediaResult.audioPath
         );
 
-      console.log("Recognition Result:");
-      console.log(recognitionResult);
+      console.log("=================================");
+      console.log("Fingerprint Generated");
+      console.log(fingerprintResult);
 
-      // STEP 4 - Save Results
+      // STEP 4 - Save Fingerprint
       await prisma.upload.update({
         where: {
           id: job.data.uploadId,
@@ -62,25 +64,23 @@ new Worker(
           status: "COMPLETED",
           processingEndedAt: new Date(),
 
-          recognitionResult: {
+          fingerprint: {
             create: {
-              trackTitle: recognitionResult.trackTitle ?? null,
-              artist: recognitionResult.artist ?? null,
-              album: recognitionResult.album ?? null,
-              genre: recognitionResult.genre ?? null,
-              confidence: recognitionResult.confidence ?? null,
-              spotifyUrl: recognitionResult.spotifyUrl ?? null,
-              youtubeUrl: recognitionResult.youtubeUrl ?? null,
-              coverUrl: recognitionResult.coverUrl ?? null,
+              duration: fingerprintResult.duration,
+              fingerprint: fingerprintResult.fingerprint,
             },
           },
         },
       });
 
-      console.log("✅ Upload updated successfully");
+      console.log("=================================");
+      console.log("✅ Upload Processing Completed");
       console.log("=================================");
     } catch (error) {
-      console.error("❌ Worker Error:", error);
+      console.error("=================================");
+      console.error("❌ Worker Error");
+      console.error(error);
+      console.error("=================================");
 
       if (job.data?.uploadId) {
         await prisma.upload.update({
@@ -93,6 +93,8 @@ new Worker(
           },
         });
       }
+
+      throw error;
     }
   },
   {
