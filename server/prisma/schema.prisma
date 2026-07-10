@@ -8,35 +8,45 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  name      String?
-  photoUrl  String?
+  id       String  @id @default(uuid())
+  email    String  @unique
+  name     String?
+  photoUrl String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  uploads   Upload[]
+
+  uploads Upload[]
 
   @@map("users")
 }
 
 model Upload {
-  id                   String       @id @default(uuid())
-  userId               String
-  fileName             String
-  fileSize             Int
-  fileType             String
-  storagePath          String
-  publicUrl            String?
-  audioPath            String?
-  thumbnailPath        String?
-  status               UploadStatus @default(UPLOADED)
+  id String @id @default(uuid())
+
+  userId String
+
+  fileName String
+  fileSize Int
+  fileType String
+
+  storagePath   String
+  publicUrl     String?
+  audioPath     String?
+  thumbnailPath String?
+
+  status UploadStatus @default(UPLOADED)
+
   processingStartedAt  DateTime?
   processingEndedAt    DateTime?
   thumbnailGeneratedAt DateTime?
-  createdAt            DateTime     @default(now())
-  updatedAt            DateTime     @updatedAt
-  fingerprint          Fingerprint?
-  user                 User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  fingerprint Fingerprint?
 
   @@index([userId])
   @@index([status])
@@ -44,17 +54,51 @@ model Upload {
   @@map("uploads")
 }
 
-model Fingerprint {
-  id          String   @id @default(uuid())
-  uploadId    String   @unique
-  duration    Int
-  fingerprint String
-  algorithm   String   @default("Chromaprint")
-  version     String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  upload      Upload   @relation(fields: [uploadId], references: [id], onDelete: Cascade)
+model Song {
+  id String @id @default(uuid())
 
+  title String
+
+  duration Int?
+
+  language String?
+
+  releaseYear Int?
+
+  source String? // User, MusicBrainz, AI, etc.
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  fingerprints Fingerprint[]
+
+  @@index([title])
+  @@map("songs")
+}
+
+model Fingerprint {
+  id String @id @default(uuid())
+
+  uploadId String @unique
+
+  songId String?
+
+  duration Int
+
+  fingerprint String
+
+  algorithm String @default("Chromaprint")
+
+  version String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  upload Upload @relation(fields: [uploadId], references: [id], onDelete: Cascade)
+
+  song Song? @relation(fields: [songId], references: [id])
+
+  @@index([songId])
   @@index([algorithm])
   @@map("fingerprints")
 }

@@ -6,6 +6,7 @@ import { audioRoutes } from "../modules/audio";
 import { musicRoutes } from "../modules/music";
 import { thumbnailRoutes } from "../modules/thumbnail";
 import { testRoutes } from "../modules/test";
+import songRoutes from "../modules/song";
 
 const router = Router();
 
@@ -26,5 +27,8 @@ router.use("/api/v1/thumbnail", thumbnailRoutes);
 
 // BullMQ Test
 router.use("/api/v1/test", testRoutes);
+
+// Songs
+router.use("/api/v1/songs", songRoutes);
 
 export default router;

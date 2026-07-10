@@ -2,6 +2,7 @@ import { Worker } from "bullmq";
 import { redisConnection } from "./connection";
 import { mediaService } from "../modules/media";
 import { acoustIdService } from "../modules/acoustid";
+import { songService } from "../modules/song/song.service";
 import { prisma } from "../config/prisma";
 
 console.log("🚀 Upload Worker Started");
@@ -53,7 +54,15 @@ new Worker(
       console.log("Fingerprint Generated");
       console.log(fingerprintResult);
 
-      // STEP 4 - Save Fingerprint
+      // STEP 4 - Get/Create Unknown Song
+      const unknownSong =
+        await songService.getOrCreateUnknownSong();
+
+      console.log("=================================");
+      console.log("Song Assigned");
+      console.log(unknownSong);
+
+      // STEP 5 - Save Upload + Fingerprint
       await prisma.upload.update({
         where: {
           id: job.data.uploadId,
@@ -66,8 +75,10 @@ new Worker(
 
           fingerprint: {
             create: {
+              songId: unknownSong.id,
               duration: fingerprintResult.duration,
               fingerprint: fingerprintResult.fingerprint,
+              algorithm: "Chromaprint",
             },
           },
         },

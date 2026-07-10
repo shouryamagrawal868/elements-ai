@@ -8,8 +8,9 @@ const envSchema = z.object({
 
   DATABASE_URL: z.string(),
 
-  REDIS_HOST: z.string().default("localhost"),
+  REDIS_HOST: z.string(),
   REDIS_PORT: z.coerce.number().default(6379),
+  REDIS_PASSWORD: z.string(),
 
   FFMPEG_PATH: z.string(),
   FFPROBE_PATH: z.string(),
