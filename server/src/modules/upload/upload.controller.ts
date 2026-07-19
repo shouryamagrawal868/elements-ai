@@ -2,6 +2,9 @@ import { Request, Response } from "express";
 import { uploadService } from "./upload.service";
 
 export class UploadController {
+  // ==========================
+  // Upload Video
+  // ==========================
   async upload(req: Request, res: Response) {
     try {
       console.log("========== DEBUG ==========");
@@ -29,21 +32,55 @@ export class UploadController {
     }
   }
 
+  // ==========================
+  // Get All Uploads
+  // ==========================
+  async getAllUploads(req: Request, res: Response) {
+    try {
+      const result = await uploadService.getAllUploads();
+
+      return res.status(200).json(result);
+    } catch (error) {
+      console.error(error);
+
+      return res.status(500).json({
+        success: false,
+        message: "Failed to fetch uploads",
+      });
+    }
+  }
+
+  // ==========================
+  // Get Upload By ID
+  // ==========================
   async getUploadById(req: Request, res: Response) {
     try {
       const { id } = req.params;
 
-      console.log("========== GET UPLOAD ==========");
-      console.log("Upload ID:", id);
-
       const result = await uploadService.getUploadById(id);
-
-      console.log("Upload Found:");
-      console.log(result);
 
       return res.status(200).json(result);
     } catch (error) {
-      console.error("GET Upload Error:");
+      console.error(error);
+
+      return res.status(404).json({
+        success: false,
+        message: "Upload not found",
+      });
+    }
+  }
+
+  // ==========================
+  // Delete Upload
+  // ==========================
+  async deleteUpload(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+
+      const result = await uploadService.deleteUpload(id);
+
+      return res.status(200).json(result);
+    } catch (error) {
       console.error(error);
 
       return res.status(404).json({

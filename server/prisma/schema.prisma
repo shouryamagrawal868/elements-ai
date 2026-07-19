@@ -48,6 +48,8 @@ model Upload {
 
   fingerprint Fingerprint?
 
+  audioFeature AudioFeature?
+
   @@index([userId])
   @@index([status])
   @@index([createdAt])
@@ -65,7 +67,7 @@ model Song {
 
   releaseYear Int?
 
-  source String? // User, MusicBrainz, AI, etc.
+  source String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -101,6 +103,27 @@ model Fingerprint {
   @@index([songId])
   @@index([algorithm])
   @@map("fingerprints")
+}
+
+model AudioFeature {
+  id String @id @default(uuid())
+
+  uploadId String @unique
+
+  duration Float
+
+  sampleRate Int
+
+  channels Int
+
+  bitrate Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  upload Upload @relation(fields: [uploadId], references: [id], onDelete: Cascade)
+
+  @@map("audio_features")
 }
 
 enum UploadStatus {

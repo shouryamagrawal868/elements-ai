@@ -1,11 +1,16 @@
 import { Worker } from "bullmq";
+
 import { redisConnection } from "./connection";
-import { mediaService } from "../modules/media";
-import { acoustIdService } from "../modules/acoustid";
-import { songService } from "../modules/song/song.service";
 import { prisma } from "../config/prisma";
 
-console.log("🚀 Upload Worker Started");
+import { mediaService } from "../modules/media";
+import { acoustIdService } from "../modules/acoustid";
+import { recognitionService } from "../modules/recognition/recognition.service";
+
+import { featureExtractor } from "../modules/ml/featureExtractor";
+import { trainingService } from "../modules/ml/training.service";
+
+console.log("Upload Worker Started");
 
 new Worker(
   "upload-processing",
@@ -15,7 +20,6 @@ new Worker(
       console.log("Processing Upload Job");
       console.log(job.data);
 
-      // STEP 1 - Update Status
       await prisma.upload.update({
         where: {
           id: job.data.uploadId,
@@ -26,7 +30,6 @@ new Worker(
         },
       });
 
-      // STEP 2 - Extract Audio & Thumbnail
       const mediaResult = await mediaService.processVideo(
         job.data.videoPath
       );
@@ -35,7 +38,14 @@ new Worker(
       console.log("Media Processing Complete");
       console.log(mediaResult);
 
-      // STEP 3 - Generate Fingerprint
+      const features = await featureExtractor.extract(
+        mediaResult.audioPath
+      );
+
+      console.log("=================================");
+      console.log("Audio Features");
+      console.log(features);
+
       await prisma.upload.update({
         where: {
           id: job.data.uploadId,
@@ -54,15 +64,36 @@ new Worker(
       console.log("Fingerprint Generated");
       console.log(fingerprintResult);
 
-      // STEP 4 - Get/Create Unknown Song
-      const unknownSong =
-        await songService.getOrCreateUnknownSong();
+      let song =
+        await recognitionService.findSongByFingerprint(
+          fingerprintResult.fingerprint
+        );
+
+      if (!song) {
+        song = await prisma.song.create({
+          data: {
+            title: "Unknown Song",
+            source: "SYSTEM",
+          },
+        });
+
+        console.log("=================================");
+        console.log("No Match Found");
+        console.log(song);
+      } else {
+        console.log("=================================");
+        console.log("Song Recognized");
+        console.log(song);
+      }
+
+      await trainingService.saveFeatures(
+        job.data.uploadId,
+        features
+      );
 
       console.log("=================================");
-      console.log("Song Assigned");
-      console.log(unknownSong);
+      console.log("Training Data Saved");
 
-      // STEP 5 - Save Upload + Fingerprint
       await prisma.upload.update({
         where: {
           id: job.data.uploadId,
@@ -75,7 +106,7 @@ new Worker(
 
           fingerprint: {
             create: {
-              songId: unknownSong.id,
+              songId: song.id,
               duration: fingerprintResult.duration,
               fingerprint: fingerprintResult.fingerprint,
               algorithm: "Chromaprint",
@@ -85,11 +116,11 @@ new Worker(
       });
 
       console.log("=================================");
-      console.log("✅ Upload Processing Completed");
+      console.log("Upload Processing Completed");
       console.log("=================================");
     } catch (error) {
       console.error("=================================");
-      console.error("❌ Worker Error");
+      console.error("Worker Error");
       console.error(error);
       console.error("=================================");
 

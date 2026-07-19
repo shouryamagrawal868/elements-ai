@@ -1,17 +1,36 @@
 import { Router } from "express";
-import { upload } from "../../config/multer";
+import multer from "multer";
 import { uploadController } from "./upload.controller";
 
 const router = Router();
 
-// Upload video
-router.post("/", upload.single("file"), (req, res) => {
-  uploadController.upload(req, res);
+const upload = multer({
+  dest: "uploads/",
 });
 
-// Get upload by ID
-router.get("/:id", (req, res) => {
-  uploadController.getUploadById(req, res);
-});
+// Upload Video
+router.post(
+  "/",
+  upload.single("file"),
+  uploadController.upload.bind(uploadController)
+);
+
+// Get All Uploads
+router.get(
+  "/",
+  uploadController.getAllUploads.bind(uploadController)
+);
+
+// Get Upload By ID
+router.get(
+  "/:id",
+  uploadController.getUploadById.bind(uploadController)
+);
+
+// Delete Upload
+router.delete(
+  "/:id",
+  uploadController.deleteUpload.bind(uploadController)
+);
 
 export default router;

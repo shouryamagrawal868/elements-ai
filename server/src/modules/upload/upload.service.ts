@@ -1,5 +1,6 @@
 import { prisma } from "../../config/prisma";
 import { uploadQueue } from "../../jobs";
+import { uploadVideo } from "../../integrations/cloudinary";
 
 export class UploadService {
   async upload(file: Express.Multer.File) {
@@ -22,22 +23,31 @@ export class UploadService {
       });
     }
 
-    // Create upload record
+    // Upload to Cloudinary
+    const cloudinaryResult = await uploadVideo(file.path);
+
+    console.log("========== CLOUDINARY ==========");
+    console.log(cloudinaryResult.secure_url);
+
+    // Save upload
     const upload = await prisma.upload.create({
       data: {
         userId: user.id,
-        fileName: file.filename,
+        fileName: file.originalname,
         fileSize: file.size,
         fileType: file.mimetype,
-        storagePath: file.path,
+        storagePath: cloudinaryResult.secure_url,
+        publicUrl: cloudinaryResult.secure_url,
         status: "UPLOADED",
       },
     });
 
-    // Queue background job
+    // Queue processing
     await uploadQueue.add("process-upload", {
       uploadId: upload.id,
       videoPath: file.path,
+      cloudinaryUrl: cloudinaryResult.secure_url,
+      publicId: cloudinaryResult.public_id,
     });
 
     return {
@@ -47,11 +57,44 @@ export class UploadService {
     };
   }
 
-  // Get upload by ID
+  // ==========================
+  // GET ALL UPLOADS
+  // ==========================
+  async getAllUploads() {
+    const uploads = await prisma.upload.findMany({
+      include: {
+        fingerprint: {
+          include: {
+            song: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    return {
+      success: true,
+      total: uploads.length,
+      uploads,
+    };
+  }
+
+  // ==========================
+  // GET SINGLE UPLOAD
+  // ==========================
   async getUploadById(uploadId: string) {
     const upload = await prisma.upload.findUnique({
       where: {
         id: uploadId,
+      },
+      include: {
+        fingerprint: {
+          include: {
+            song: true,
+          },
+        },
       },
     });
 
@@ -62,6 +105,32 @@ export class UploadService {
     return {
       success: true,
       upload,
+    };
+  }
+
+  // ==========================
+  // DELETE UPLOAD
+  // ==========================
+  async deleteUpload(uploadId: string) {
+    const upload = await prisma.upload.findUnique({
+      where: {
+        id: uploadId,
+      },
+    });
+
+    if (!upload) {
+      throw new Error("Upload not found");
+    }
+
+    await prisma.upload.delete({
+      where: {
+        id: uploadId,
+      },
+    });
+
+    return {
+      success: true,
+      message: "Upload deleted successfully.",
     };
   }
 }
