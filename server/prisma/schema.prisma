@@ -59,13 +59,15 @@ model Upload {
 model Song {
   id String @id @default(uuid())
 
-  title String
+  title  String
+  artist String?
+  album  String?
 
-  duration Int?
-
-  language String?
-
+  duration    Int?
   releaseYear Int?
+  language    String?
+
+  acoustidRecordingId String?
 
   source String?
 
@@ -75,6 +77,7 @@ model Song {
   fingerprints Fingerprint[]
 
   @@index([title])
+  @@index([acoustidRecordingId])
   @@map("songs")
 }
 

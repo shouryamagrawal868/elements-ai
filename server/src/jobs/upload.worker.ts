@@ -6,6 +6,7 @@ import { prisma } from "../config/prisma";
 import { mediaService } from "../modules/media";
 import { acoustIdService } from "../modules/acoustid";
 import { recognitionService } from "../modules/recognition/recognition.service";
+import { acoustIdIntegration } from "../integrations/acoustid";
 
 import { featureExtractor } from "../modules/ml/featureExtractor";
 import { trainingService } from "../modules/ml/training.service";
@@ -70,19 +71,47 @@ new Worker(
         );
 
       if (!song) {
-        song = await prisma.song.create({
-          data: {
-            title: "Unknown Song",
-            source: "SYSTEM",
-          },
-        });
+        // Try AcoustID lookup for real song identification
+        const acoustIdResult = await acoustIdIntegration.lookup(
+          fingerprintResult.fingerprint,
+          fingerprintResult.duration
+        );
 
-        console.log("=================================");
-        console.log("No Match Found");
-        console.log(song);
+        if (acoustIdResult.found) {
+          song = await prisma.song.create({
+            data: {
+              title: acoustIdResult.title ?? "Unknown Song",
+              artist: acoustIdResult.artist,
+              album: acoustIdResult.album,
+              releaseYear: acoustIdResult.releaseYear,
+              duration: acoustIdResult.duration,
+              acoustidRecordingId: acoustIdResult.recordingId,
+              source: "ACOUSTID",
+            },
+          });
+
+          console.log("=================================");
+          console.log("Song Identified via AcoustID!");
+          console.log("Title:", song.title);
+          console.log("Artist:", song.artist);
+          console.log("Album:", song.album);
+          console.log("Year:", song.releaseYear);
+          console.log("=================================");
+        } else {
+          song = await prisma.song.create({
+            data: {
+              title: "Unknown Song",
+              source: "SYSTEM",
+            },
+          });
+
+          console.log("=================================");
+          console.log("No Match Found — created Unknown Song");
+          console.log("=================================");
+        }
       } else {
         console.log("=================================");
-        console.log("Song Recognized");
+        console.log("Song Recognized from local database");
         console.log(song);
       }
 
