@@ -7,6 +7,7 @@ import { musicRoutes } from "../modules/music";
 import { thumbnailRoutes } from "../modules/thumbnail";
 import { testRoutes } from "../modules/test";
 import songRoutes from "../modules/song";
+import { datasetRoutes } from "../modules/dataset";
 
 const router = Router();
 
@@ -30,5 +31,8 @@ router.use("/api/v1/test", testRoutes);
 
 // Songs
 router.use("/api/v1/songs", songRoutes);
+
+// Dataset
+router.use("/api/v1/dataset", datasetRoutes);
 
 export default router;
