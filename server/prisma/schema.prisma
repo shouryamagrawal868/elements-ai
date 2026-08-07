@@ -8,47 +8,36 @@ datasource db {
 }
 
 model User {
-  id       String  @id @default(uuid())
-  email    String  @unique
-  name     String?
-  photoUrl String?
-
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String?
+  photoUrl  String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  uploads Upload[]
+  uploads   Upload[]
 
   @@map("users")
 }
 
 model Upload {
-  id String @id @default(uuid())
-
-  userId String
-
-  fileName String
-  fileSize Int
-  fileType String
-
-  storagePath   String
-  publicUrl     String?
-  audioPath     String?
-  thumbnailPath String?
-
-  status UploadStatus @default(UPLOADED)
-
+  id                   String        @id @default(uuid())
+  userId               String
+  fileName             String
+  fileSize             Int
+  fileType             String
+  storagePath          String
+  publicUrl            String?
+  audioPath            String?
+  thumbnailPath        String?
+  status               UploadStatus  @default(UPLOADED)
   processingStartedAt  DateTime?
   processingEndedAt    DateTime?
   thumbnailGeneratedAt DateTime?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  fingerprint Fingerprint?
-
-  audioFeature AudioFeature?
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+  audioFeature         AudioFeature?
+  fingerprint          Fingerprint?
+  user                 User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([status])
@@ -57,24 +46,18 @@ model Upload {
 }
 
 model Song {
-  id String @id @default(uuid())
-
-  title  String
-  artist String?
-  album  String?
-
-  duration    Int?
-  releaseYear Int?
-  language    String?
-
+  id                  String        @id @default(uuid())
+  title               String
+  duration            Int?
+  language            String?
+  releaseYear         Int?
+  source              String?
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
   acoustidRecordingId String?
-
-  source String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  fingerprints Fingerprint[]
+  album               String?
+  artist              String?
+  fingerprints        Fingerprint[]
 
   @@index([title])
   @@index([acoustidRecordingId])
@@ -82,26 +65,17 @@ model Song {
 }
 
 model Fingerprint {
-  id String @id @default(uuid())
-
-  uploadId String @unique
-
-  songId String?
-
-  duration Int
-
+  id          String   @id @default(uuid())
+  uploadId    String   @unique
+  duration    Int
   fingerprint String
-
-  algorithm String @default("Chromaprint")
-
-  version String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  upload Upload @relation(fields: [uploadId], references: [id], onDelete: Cascade)
-
-  song Song? @relation(fields: [songId], references: [id])
+  algorithm   String   @default("Chromaprint")
+  version     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  songId      String?
+  song        Song?    @relation(fields: [songId], references: [id])
+  upload      Upload   @relation(fields: [uploadId], references: [id], onDelete: Cascade)
 
   @@index([songId])
   @@index([algorithm])
@@ -109,22 +83,23 @@ model Fingerprint {
 }
 
 model AudioFeature {
-  id String @id @default(uuid())
-
-  uploadId String @unique
-
-  duration Float
-
-  sampleRate Int
-
-  channels Int
-
-  bitrate Int
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  upload Upload @relation(fields: [uploadId], references: [id], onDelete: Cascade)
+  id                String   @id @default(uuid())
+  uploadId          String   @unique
+  duration          Float
+  sampleRate        Int
+  channels          Int?
+  bitrate           Int?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  chroma            Json?
+  mfcc              Json?
+  rmsEnergy         Float?
+  rolloff           Float?
+  spectralBandwidth Float?
+  spectralCentroid  Float?
+  tempo             Float?
+  zeroCrossingRate  Float?
+  upload            Upload   @relation(fields: [uploadId], references: [id], onDelete: Cascade)
 
   @@map("audio_features")
 }

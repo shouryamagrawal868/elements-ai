@@ -10,7 +10,8 @@ const storage = multer.diskStorage({
     cb(null, "uploads/");
   },
   filename: (req, file, cb) => {
-    const unique = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    const unique =
+      Date.now() + "-" + Math.round(Math.random() * 1e9);
     cb(null, unique + path.extname(file.originalname));
   },
 });
@@ -29,11 +30,18 @@ const upload = multer({
   limits: { fileSize: 50 * 1024 * 1024 },
 });
 
-// Upload a song to dataset
+// Upload single song
 router.post(
   "/upload",
   upload.single("audio"),
   datasetController.upload.bind(datasetController)
+);
+
+// Upload multiple songs at once
+router.post(
+  "/bulk",
+  upload.array("audio", 50),
+  datasetController.bulkUpload.bind(datasetController)
 );
 
 // Get dataset statistics

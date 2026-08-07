@@ -1,6 +1,8 @@
 import { prisma } from "../../config/prisma";
 import { acoustIdService } from "../acoustid";
 import { featureExtractor } from "../ml/featureExtractor";
+import { trainingService } from "../ml/training.service";
+import { extractRichFeatures } from "../../services/pythonFeatures";
 import { DatasetUploadInput, DatasetUploadResult } from "./dataset.types";
 import fs from "fs";
 
@@ -31,25 +33,34 @@ class DatasetService {
 
     let fingerprintGenerated = false;
 
-    // 2. Generate fingerprint and store against songId
+    // 2. Get or create the dataset system user
+    const systemUser = await prisma.user.upsert({
+      where: { email: "dataset@elements-ai.internal" },
+      update: {},
+      create: {
+        email: "dataset@elements-ai.internal",
+        name: "Dataset Pipeline",
+      },
+    });
+
+    // 3. Create a dataset upload record to satisfy FK constraints
+    const datasetUpload = await prisma.upload.create({
+      data: {
+        userId: systemUser.id,
+        fileName: input.title + " - " + input.artist,
+        fileSize: 0,
+        fileType: "audio/mp3",
+        storagePath: audioFilePath,
+        status: "COMPLETED",
+      },
+    });
+
+    // 4. Generate Chromaprint fingerprint
     try {
       const fingerprintResult =
         await acoustIdService.generateFingerprint(
           audioFilePath
         );
-
-      // Store fingerprint using songId as both uploadId and songId
-      // We use a dedicated dataset upload record to satisfy the FK
-      const datasetUpload = await prisma.upload.create({
-        data: {
-          userId: "dataset-pipeline",
-          fileName: input.title + " - " + input.artist,
-          fileSize: 0,
-          fileType: "audio/mp3",
-          storagePath: audioFilePath,
-          status: "COMPLETED",
-        },
-      });
 
       await prisma.fingerprint.create({
         data: {
@@ -62,43 +73,51 @@ class DatasetService {
       });
 
       fingerprintGenerated = true;
-
       console.log("=================================");
       console.log("Fingerprint saved for song:", song.id);
-
-      // 3. Extract and save audio features
-      try {
-        const features = await featureExtractor.extract(
-          audioFilePath
-        );
-
-        await prisma.audioFeature.upsert({
-          where: { uploadId: datasetUpload.id },
-          create: {
-            uploadId: datasetUpload.id,
-            duration: features.duration,
-            sampleRate: features.sampleRate,
-            channels: features.channels,
-            bitrate: features.bitrate,
-          },
-          update: {
-            duration: features.duration,
-            sampleRate: features.sampleRate,
-            channels: features.channels,
-            bitrate: features.bitrate,
-          },
-        });
-
-        console.log("=================================");
-        console.log("Audio features saved for song:", song.id);
-      } catch (err) {
-        console.error("Feature extraction failed:", err);
-      }
     } catch (err) {
       console.error("Fingerprint generation failed:", err);
     }
 
-    // 4. Clean up temp file
+    // 5. Extract basic features with Node.js
+    try {
+      const features = await featureExtractor.extract(
+        audioFilePath
+      );
+      await trainingService.saveFeatures(
+        datasetUpload.id,
+        features
+      );
+      console.log("=================================");
+      console.log("Basic features saved");
+    } catch (err) {
+      console.error("Basic feature extraction failed:", err);
+    }
+
+    // 6. Extract rich features with Python
+    try {
+      const richFeatures = await extractRichFeatures(
+        audioFilePath
+      );
+
+      if (richFeatures) {
+        await trainingService.saveRichFeatures(
+          datasetUpload.id,
+          richFeatures
+        );
+        console.log("=================================");
+        console.log("Rich Python features saved!");
+        console.log("Tempo:", richFeatures.tempo, "BPM");
+        console.log(
+          "MFCC coefficients:",
+          richFeatures.mfcc.length
+        );
+      }
+    } catch (err) {
+      console.error("Rich feature extraction failed:", err);
+    }
+
+    // 7. Clean up temp file
     try {
       if (fs.existsSync(audioFilePath)) {
         fs.unlinkSync(audioFilePath);

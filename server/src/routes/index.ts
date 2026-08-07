@@ -8,6 +8,7 @@ import { thumbnailRoutes } from "../modules/thumbnail";
 import { testRoutes } from "../modules/test";
 import songRoutes from "../modules/song";
 import { datasetRoutes } from "../modules/dataset";
+import recognitionRoutes from "../modules/recognition/recognition.routes";
 
 const router = Router();
 
@@ -34,5 +35,8 @@ router.use("/api/v1/songs", songRoutes);
 
 // Dataset
 router.use("/api/v1/dataset", datasetRoutes);
+
+// AI Recognition
+router.use("/api/v1/recognition", recognitionRoutes);
 
 export default router;
