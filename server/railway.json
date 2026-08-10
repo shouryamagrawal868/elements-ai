@@ -8,8 +8,3 @@
     "startCommand": "node dist/server.js"
   }
 }
-  "deploy": {
-    "startCommand": "node dist/server.js",
-    "restartPolicyType": "ON_FAILURE"
-  }
-}
