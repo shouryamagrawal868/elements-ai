@@ -1,10 +1,10 @@
 [phases.setup]
-nixPkgs = ["nodejs_20", "npm-9_x", "python311Full", "python311Packages.pip", "ffmpeg", "chromaprint", "gcc-unwrapped"]
+nixPkgs = ["nodejs_20", "npm-9_x", "python311Full", "ffmpeg", "chromaprint"]
 
 [phases.install]
 cmds = [
   "npm install",
-  "pip3 install numpy==1.26.4 scipy librosa psycopg2-binary --break-system-packages"
+  "python3 -m pip install numpy==1.26.4 scipy librosa psycopg2-binary --break-system-packages"
 ]
 
 [phases.build]
