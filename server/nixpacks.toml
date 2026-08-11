@@ -4,7 +4,7 @@ nixPkgs = ["nodejs_20", "npm-9_x", "python311", "python311Packages.pip", "ffmpeg
 [phases.install]
 cmds = [
   "npm install",
-  "pip3 install librosa numpy scipy psycopg2-binary"
+  "pip3 install librosa numpy scipy psycopg2-binary --break-system-packages"
 ]
 
 [phases.build]
