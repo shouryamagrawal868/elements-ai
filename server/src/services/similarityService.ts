@@ -25,19 +25,28 @@ export async function findSimilarSongs(
   databaseUrl: string
 ): Promise<SimilarityResult | null> {
   return new Promise((resolve) => {
-    const scriptPath = path.join(
-      __dirname,
-      "../../../python/similarity_engine.py"
-    );
+    // Try multiple possible script locations
+    const possiblePaths = [
+      path.join(__dirname, "../../python/similarity_engine.py"),
+      path.join(__dirname, "../../../python/similarity_engine.py"),
+      path.join(process.cwd(), "python/similarity_engine.py"),
+    ];
+
+    const scriptPath = possiblePaths[0];
 
     console.log("=================================");
     console.log("Similarity Engine Starting...");
     console.log("Audio:", audioPath);
+    console.log("Script:", scriptPath);
 
-    const python = spawn("python", [
+    // Try python3 first, fall back to python
+    const pythonCmd =
+      process.platform === "win32" ? "python" : "python3";
+
+    const python = spawn(pythonCmd, [
       scriptPath,
       audioPath,
-      databaseUrl,
+      databaseUrl.trim(),
     ]);
 
     let output = "";

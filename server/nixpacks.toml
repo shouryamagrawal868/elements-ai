@@ -1,0 +1,17 @@
+[phases.setup]
+nixPkgs = ["python311", "python311Packages.pip", "ffmpeg", "chromaprint"]
+
+[phases.install]
+cmds = [
+  "npm install",
+  "pip3 install librosa numpy scipy psycopg2-binary"
+]
+
+[phases.build]
+cmds = [
+  "npx prisma generate",
+  "npm run build"
+]
+
+[start]
+cmd = "node dist/server.js"
