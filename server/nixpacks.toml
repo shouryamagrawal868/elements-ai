@@ -1,10 +1,10 @@
 [phases.setup]
-nixPkgs = ["nodejs_20", "python311", "ffmpeg"]
+nixPkgs = ["nodejs_20", "python311", "python311Packages.pip", "ffmpeg"]
 
 [phases.install]
 cmds = [
   "npm install",
-  "python3 -m pip install --user virtualenv",
+  "python3 -m pip install virtualenv",
   "python3 -m virtualenv /app/venv",
   "/app/venv/bin/pip install --upgrade pip",
   "/app/venv/bin/pip install librosa numpy scipy soundfile"
