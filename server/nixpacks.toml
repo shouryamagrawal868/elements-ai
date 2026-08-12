@@ -1,18 +1,14 @@
 [phases.setup]
-nixPkgs = ["nodejs_20", "npm-9_x", "python311", "python311Packages.pip", "python311Packages.virtualenv", "ffmpeg", "chromaprint"]
+nixPkgs = ["nodejs_20", "python311", "ffmpeg"]
 
 [phases.install]
 cmds = [
   "npm install",
+  "python3 -m pip install --user virtualenv",
   "python3 -m virtualenv /app/venv",
-  "/app/venv/bin/pip install numpy==1.26.4 scipy librosa psycopg2-binary"
-]
-
-[phases.build]
-cmds = [
-  "npx prisma generate",
-  "npm run build"
+  "/app/venv/bin/pip install --upgrade pip",
+  "/app/venv/bin/pip install librosa numpy scipy soundfile"
 ]
 
 [start]
-cmd = "node dist/server.js"
+cmd = "npm start"
