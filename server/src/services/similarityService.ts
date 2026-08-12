@@ -41,7 +41,11 @@ export async function findSimilarSongs(
 
     // Try python3 first, fall back to python
     const pythonCmd =
-      process.platform === "win32" ? "python" : "python3";
+      process.platform === "win32"
+        ? "python"
+        : (require("fs").existsSync("/app/venv/bin/python3")
+            ? "/app/venv/bin/python3"
+            : "python3");
 
     const python = spawn(pythonCmd, [
       scriptPath,
