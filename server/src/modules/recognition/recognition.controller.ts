@@ -1,8 +1,11 @@
 import { Request, Response } from "express";
-import { findSimilarSongs } from "../../services/similarityService";
 import { mediaService } from "../media";
+import { featureExtractor } from "../ml/featureExtractor";
+import { trainingService } from "../ml/training.service";
+import { findSimilarSongsNode } from "../../services/similarityEngineNode";
+import { prisma } from "../../config/prisma";
 import fs from "fs";
-import path from "path";
+import { v4 as uuidv4 } from "uuid";
 
 class RecognitionController {
   async identify(req: Request, res: Response) {
@@ -32,12 +35,35 @@ class RecognitionController {
         audioPath = mediaResult.audioPath;
       }
 
-      const databaseUrl = process.env.DATABASE_URL!;
+      // Extract basic audio features
+      const features = await featureExtractor.extract(audioPath);
 
-      const result = await findSimilarSongs(
-        audioPath,
-        databaseUrl
-      );
+      // Create a temporary upload record for feature storage
+      const systemUser = await prisma.user.upsert({
+        where: { email: "recognition@elements-ai.internal" },
+        update: {},
+        create: {
+          email: "recognition@elements-ai.internal",
+          name: "Recognition Pipeline",
+        },
+      });
+
+      const tempUpload = await prisma.upload.create({
+        data: {
+          userId: systemUser.id,
+          fileName: file.originalname,
+          fileSize: file.size,
+          fileType: file.mimetype,
+          storagePath: audioPath,
+          status: "COMPLETED",
+        },
+      });
+
+      // Save features
+      await trainingService.saveFeatures(tempUpload.id, features);
+
+      // Run Node.js similarity engine
+      const result = await findSimilarSongsNode(tempUpload.id);
 
       // Clean up temp files
       try {
@@ -47,17 +73,7 @@ class RecognitionController {
         }
       } catch (e) {}
 
-      if (!result) {
-        return res.status(500).json({
-          success: false,
-          message: "Recognition failed",
-        });
-      }
-
-      if (
-        !result.topMatches ||
-        result.topMatches.length === 0
-      ) {
+      if (!result || result.topMatches.length === 0) {
         return res.json({
           success: true,
           found: false,
@@ -66,6 +82,15 @@ class RecognitionController {
       }
 
       const bestMatch = result.topMatches[0];
+
+      if (bestMatch.similarity < 0.9) {
+        return res.json({
+          success: true,
+          found: false,
+          message: "No confident match found",
+          bestAttempt: bestMatch,
+        });
+      }
 
       return res.json({
         success: true,
@@ -80,7 +105,6 @@ class RecognitionController {
         },
         allMatches: result.topMatches,
         totalSongsCompared: result.totalSongsCompared,
-        queryFeatures: result.queryFeatures,
       });
     } catch (error) {
       console.error("Recognition error:", error);
