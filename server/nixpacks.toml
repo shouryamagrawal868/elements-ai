@@ -1,5 +1,8 @@
 providers = ["node"]
 
+[variables]
+PATH = "/app/.venv/bin:$PATH"
+
 [phases.setup]
 nixPkgs = [
   "nodejs_20",
@@ -12,7 +15,8 @@ nixPkgs = [
 
 [phases.install]
 cmds = [
-  "pip install --no-cache-dir --break-system-packages librosa numpy scipy soundfile",
+  "python3 -m venv /app/.venv",
+  "/app/.venv/bin/pip install --no-cache-dir librosa numpy scipy soundfile",
   "npm ci"
 ]
 
