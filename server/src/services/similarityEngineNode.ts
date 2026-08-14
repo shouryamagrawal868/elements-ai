@@ -17,15 +17,19 @@ export interface SimilarityResult {
 
 function cosineSimilarity(a: number[], b: number[]): number {
   if (a.length !== b.length) return 0;
+
   let dot = 0;
   let normA = 0;
   let normB = 0;
+
   for (let i = 0; i < a.length; i++) {
     dot += a[i] * b[i];
     normA += a[i] * a[i];
     normB += b[i] * b[i];
   }
+
   if (normA === 0 || normB === 0) return 0;
+
   return dot / (Math.sqrt(normA) * Math.sqrt(normB));
 }
 
@@ -38,27 +42,71 @@ function buildVector(features: {
 }): number[] {
   const vector: number[] = [];
 
+  // Tempo
   vector.push((features.tempo ?? 0) / 250.0);
 
+  // MFCC - 13 coefficients
   const mfcc = features.mfcc ?? new Array(13).fill(0);
-  const mfccArray = mfcc as number[];
+
+  const mfccArray = Array.isArray(mfcc)
+    ? mfcc
+    : new Array(13).fill(0);
+
   const mean =
-    mfccArray.reduce((a, b) => a + b, 0) / mfccArray.length;
-  const std = Math.sqrt(
-    mfccArray.reduce((a, b) => a + Math.pow(b - mean, 2), 0) /
-      mfccArray.length
-  );
-  const normalized =
-    std > 0 ? mfccArray.map((x) => (x - mean) / std) : mfccArray;
-  vector.push(...normalized);
+    mfccArray.length > 0
+      ? mfccArray.reduce((a, b) => a + b, 0) /
+        mfccArray.length
+      : 0;
 
+  const std =
+    mfccArray.length > 0
+      ? Math.sqrt(
+          mfccArray.reduce(
+            (sum, value) =>
+              sum + Math.pow(value - mean, 2),
+            0
+          ) / mfccArray.length
+        )
+      : 0;
+
+  const normalizedMFCC =
+    std > 0
+      ? mfccArray.map(
+          (value) => (value - mean) / std
+        )
+      : mfccArray;
+
+  vector.push(...normalizedMFCC);
+
+  // Chroma - 12 values
   const chroma = features.chroma ?? new Array(12).fill(0);
-  vector.push(...(chroma as number[]));
 
-  vector.push((features.zeroCrossingRate ?? 0) * 100);
-  vector.push((features.rmsEnergy ?? 0) * 10);
+  const chromaArray = Array.isArray(chroma)
+    ? chroma
+    : new Array(12).fill(0);
+
+  vector.push(...chromaArray);
+
+  // Zero crossing rate
+  vector.push(
+    (features.zeroCrossingRate ?? 0) * 100
+  );
+
+  // RMS energy
+  vector.push(
+    (features.rmsEnergy ?? 0) * 10
+  );
 
   return vector;
+}
+
+function getConfidence(similarity: number): string {
+  const percentage = Math.max(
+    0,
+    Math.min(100, similarity * 100)
+  );
+
+  return `${percentage.toFixed(2)}%`;
 }
 
 export async function findSimilarSongsNode(
@@ -66,97 +114,221 @@ export async function findSimilarSongsNode(
   topK: number = 5
 ): Promise<SimilarityResult | null> {
   try {
-    // Get features of the uploaded audio
-    const uploadFeature = await prisma.audioFeature.findUnique({
-      where: { uploadId },
-    });
+    console.log("=================================");
+    console.log("Node.js Similarity Engine");
+    console.log("Upload ID:", uploadId);
+
+    // --------------------------------------------------
+    // 1. Get features of uploaded audio
+    // --------------------------------------------------
+
+    const uploadFeature =
+      await prisma.audioFeature.findUnique({
+        where: {
+          uploadId,
+        },
+      });
 
     if (!uploadFeature) {
-      console.log("No audio features found for upload:", uploadId);
+      console.log(
+        "No audio features found for upload:",
+        uploadId
+      );
+
       return null;
     }
+
+    // --------------------------------------------------
+    // 2. Build query feature vector
+    // --------------------------------------------------
 
     const queryVector = buildVector({
       tempo: uploadFeature.tempo,
-      mfcc: uploadFeature.mfcc as number[],
-      chroma: uploadFeature.chroma as number[],
-      zeroCrossingRate: uploadFeature.zeroCrossingRate,
-      rmsEnergy: uploadFeature.rmsEnergy,
+      mfcc: Array.isArray(uploadFeature.mfcc)
+        ? (uploadFeature.mfcc as number[])
+        : null,
+      chroma: Array.isArray(uploadFeature.chroma)
+        ? (uploadFeature.chroma as number[])
+        : null,
+      zeroCrossingRate:
+        uploadFeature.zeroCrossingRate,
+      rmsEnergy:
+        uploadFeature.rmsEnergy,
     });
 
-    // Get all dataset songs with features
-    const datasetFeatures = await prisma.audioFeature.findMany({
-      where: {
-        upload: {
-          userId: "dataset@elements-ai.internal",
-        },
-        mfcc: { not: null },
-        chroma: { not: null },
-      },
-      include: {
-        upload: {
-          include: {
-            fingerprint: {
-              include: {
-                song: true,
-              },
-            },
-          },
-        },
-      },
-    });
+    console.log(
+      "Query vector length:",
+      queryVector.length
+    );
 
-    if (datasetFeatures.length === 0) {
-      console.log("No dataset features found");
+    // --------------------------------------------------
+    // 3. Find dataset system user
+    // --------------------------------------------------
+
+    const systemUser =
+      await prisma.user.findUnique({
+        where: {
+          email: "dataset@elements-ai.internal",
+        },
+      });
+
+    if (!systemUser) {
+      console.log(
+        "Dataset system user not found"
+      );
+
       return null;
     }
 
-    const results: SimilarityMatch[] = [];
+    // --------------------------------------------------
+    // 4. Load dataset songs
+    // --------------------------------------------------
 
-    for (const feature of datasetFeatures) {
-      const song = feature.upload?.fingerprint?.song;
-      if (!song) continue;
-
-      const songVector = buildVector({
-        tempo: feature.tempo,
-        mfcc: feature.mfcc as number[],
-        chroma: feature.chroma as number[],
-        zeroCrossingRate: feature.zeroCrossingRate,
-        rmsEnergy: feature.rmsEnergy,
+    const datasetUploads =
+      await prisma.upload.findMany({
+        where: {
+          userId: systemUser.id,
+        },
+        include: {
+          audioFeature: true,
+          fingerprint: {
+            include: {
+              song: true,
+            },
+          },
+        },
       });
 
-      const similarity = cosineSimilarity(queryVector, songVector);
+    console.log(
+      "Dataset uploads found:",
+      datasetUploads.length
+    );
 
-      results.push({
+    if (datasetUploads.length === 0) {
+      console.log(
+        "No dataset songs found"
+      );
+
+      return {
+        totalSongsCompared: 0,
+        topMatches: [],
+      };
+    }
+
+    // --------------------------------------------------
+    // 5. Compare query against every dataset song
+    // --------------------------------------------------
+
+    const matches: SimilarityMatch[] = [];
+
+    for (const datasetUpload of datasetUploads) {
+      const feature =
+        datasetUpload.audioFeature;
+
+      const song =
+        datasetUpload.fingerprint?.song;
+
+      if (!feature || !song) {
+        continue;
+      }
+
+      // Skip songs that do not have rich ML features
+      if (
+        !feature.mfcc ||
+        !feature.chroma
+      ) {
+        continue;
+      }
+
+      const datasetVector =
+        buildVector({
+          tempo: feature.tempo,
+          mfcc: Array.isArray(feature.mfcc)
+            ? (feature.mfcc as number[])
+            : null,
+          chroma: Array.isArray(feature.chroma)
+            ? (feature.chroma as number[])
+            : null,
+          zeroCrossingRate:
+            feature.zeroCrossingRate,
+          rmsEnergy:
+            feature.rmsEnergy,
+        });
+
+      const similarity =
+        cosineSimilarity(
+          queryVector,
+          datasetVector
+        );
+
+      console.log(
+        `Song: ${song.title} | Similarity: ${similarity.toFixed(
+          4
+        )}`
+      );
+
+      matches.push({
         songId: song.id,
         title: song.title,
-        artist: song.artist ?? "",
-        album: song.album,
-        releaseYear: song.releaseYear,
-        similarity: Math.round(similarity * 10000) / 10000,
-        confidence: `${Math.round(similarity * 1000) / 10}%`,
+        artist: song.artist ?? "Unknown Artist",
+        album: song.album ?? null,
+        releaseYear:
+          song.releaseYear ?? null,
+        similarity,
+        confidence:
+          getConfidence(similarity),
       });
     }
 
-    results.sort((a, b) => b.similarity - a.similarity);
+    // --------------------------------------------------
+    // 6. Sort by highest similarity
+    // --------------------------------------------------
 
-    const topMatches = results.slice(0, topK);
+    matches.sort(
+      (a, b) =>
+        b.similarity - a.similarity
+    );
 
-    console.log("=================================");
-    console.log("Node.js Similarity Results:");
-    console.log("Songs compared:", results.length);
-    if (topMatches.length > 0) {
-      console.log(
-        `Best match: ${topMatches[0].artist} - ${topMatches[0].title} (${topMatches[0].confidence})`
-      );
-    }
+    // --------------------------------------------------
+    // 7. Return top matches
+    // --------------------------------------------------
+
+    const topMatches =
+      matches.slice(0, topK);
+
+    console.log(
+      "================================="
+    );
+    console.log(
+      "Songs Compared:",
+      matches.length
+    );
+    console.log(
+      "Top Match:",
+      topMatches[0]?.title ??
+        "No match"
+    );
+    console.log(
+      "Top Similarity:",
+      topMatches[0]
+        ? topMatches[0].similarity.toFixed(4)
+        : "N/A"
+    );
+    console.log(
+      "================================="
+    );
 
     return {
-      totalSongsCompared: results.length,
+      totalSongsCompared:
+        matches.length,
       topMatches,
     };
   } catch (error) {
-    console.error("Node similarity engine error:", error);
-    return null;
+    console.error(
+      "Node.js Similarity Engine Error:",
+      error
+    );
+
+    throw error;
   }
 }
