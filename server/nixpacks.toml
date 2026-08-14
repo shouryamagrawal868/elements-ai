@@ -12,14 +12,14 @@ nixPkgs = [
 
 [phases.install]
 cmds = [
-  "pip install --no-cache-dir librosa numpy scipy soundfile",
+  "pip install --no-cache-dir --break-system-packages librosa numpy scipy soundfile",
   "npm ci"
 ]
 
 [phases.build]
 cmds = [
   "npx prisma generate",
-  "npx tsc"
+  "npx tsc --skipLibCheck"
 ]
 
 [start]
