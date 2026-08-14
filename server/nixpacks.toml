@@ -10,14 +10,16 @@ nixPkgs = [
   "python311Packages.pip",
   "ffmpeg",
   "chromaprint",
-  "libsndfile"
+  "libsndfile",
+  "bash",
+  "coreutils"
 ]
 
 [phases.install]
 cmds = [
   "python3 -m venv /app/.venv",
   "/app/.venv/bin/pip install --no-cache-dir librosa numpy scipy soundfile",
-  "npm ci"
+  "npm ci --ignore-scripts"
 ]
 
 [phases.build]
