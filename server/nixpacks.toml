@@ -5,10 +5,6 @@ nixPkgs = [
   "nodejs_20",
   "python311",
   "python311Packages.pip",
-  "python311Packages.librosa",
-  "python311Packages.numpy",
-  "python311Packages.scipy",
-  "python311Packages.soundfile",
   "ffmpeg",
   "chromaprint",
   "libsndfile"
@@ -16,6 +12,7 @@ nixPkgs = [
 
 [phases.install]
 cmds = [
+  "pip install --no-cache-dir librosa numpy scipy soundfile",
   "npm ci"
 ]
 
